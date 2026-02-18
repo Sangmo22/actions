@@ -1,0 +1,22 @@
+<pre>
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            {% block title %}
+                Notes App
+            {% endblock title %}
+        </title>
+        <link rel="stylesheet" href="{% static 'notes/css/style.css' %}" />
+    </head>
+    <body>
+        {% include 'notes/partials/navigation.html' %}
+        {% if messages %}
+            {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+        {% endif %}
+        {% block content %}
+        {% endblock content %}
+    </body>
+</html>
+</pre>

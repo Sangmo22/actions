@@ -1,0 +1,31 @@
+<pre>
+{% extends 'notes/base.html' %}
+{% block title %}
+    Homepage
+{% endblock title %}
+{% block content %}
+    <h2>Homepage</h2>
+    <table width="80%">
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Action</th>
+        </tr>
+        {% for note in notes %}
+            <tr>
+                <td>{{ note.title }}</td>
+                <td>{{ note.description }}</td>
+                <td>
+                    <a href="{% url 'notes:edit' note.id %}">Edit</a>
+                    |
+                    <a href="{% url 'notes:delete' note.id %}" onclick="return confirm('Are you sure to delete?');">Delete</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="3">No results Found</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock content %}
+</pre>

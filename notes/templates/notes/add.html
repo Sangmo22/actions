@@ -1,0 +1,13 @@
+<pre>
+{% extends 'notes/base.html' %}
+{% block title %}
+    Add Notes
+{% endblock title %}
+{% block content %}
+    <h2>Add Notes</h2>
+    <form action="{% url 'notes:add' %}" method="post">
+        {% csrf_token %} {{ form.as_p }}
+        <input name="submit" type="submit" value="Submit" />
+    </form>
+{% endblock content %}
+</pre>
