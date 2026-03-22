@@ -1,0 +1,224 @@
+{% extends 'notes/base.html' %}
+{% block title %}
+    SQL Injection - Safe Demo
+{% endblock title %}
+{% block content %}
+    <style>
+    .container {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    
+    .safe-box {
+        background-color: #d4edda;
+        border: 2px solid #28a745;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    
+    .code-block {
+        background-color: #f4f4f4;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-family: monospace;
+        font-size: 13px;
+        margin: 10px 0;
+        border-left: 4px solid #28a745;
+        word-break: break-all;
+    }
+    
+    .form-container {
+        background-color: #fff;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    
+    .form-group input, .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+    }
+    
+    .submit-btn {
+        background-color: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    .submit-btn:hover {
+        background-color: #218838;
+    }
+    
+    .notes-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    
+    .notes-table th, .notes-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .notes-table th {
+        background-color: #f9f9f9;
+        font-weight: bold;
+    }
+    
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+    }
+    </style>
+    <div class="container">
+        <a href="{% url 'security:dashboard' %}" class="back-link">← Back to Dashboard</a>
+        <h1>✅ SQL Injection - SAFE Version</h1>
+        <div class="safe-box">
+            <strong>PROTECTION STATUS:</strong> 🟢 PROTECTED
+            <br>
+            <strong>Solution:</strong> This page uses parameterized queries (prepared statements) to safely handle user input.
+        </div>
+        <h2>How Protection Works:</h2>
+        <p>
+            Parameterized queries separate SQL code from data. The SQL structure is fixed, and user input is passed as separate parameters, preventing code injection.
+        </p>
+        <h3>Protected Code Pattern:</h3>
+        <div class="code-block">
+            sql = "INSERT INTO notes_note (title, description) VALUES (%s, %s);"
+            <br>
+            <br>
+            with connection.cursor() as cursor:
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;cursor.execute(sql, [title, description])
+        </div>
+        <h3>Why This Prevents SQL Injection:</h3>
+        <ul>
+            <li>The SQL template is fixed and cannot be modified by user input</li>
+            <li>Parameters are treated as DATA, not SQL code</li>
+            <li>Special characters are automatically escaped by the database driver</li>
+            <li>
+                Even if you inject <code>'); DROP TABLE notes_note; --</code>, it's stored as literal text
+            </li>
+        </ul>
+        <h3>Even if You Try to Inject:</h3>
+        <div class="code-block">
+            Input: '); DROP TABLE notes_note; --
+            <br>
+            <br>
+            SQL becomes:
+            <br>
+            INSERT INTO notes_note (title, description)
+            <br>
+            VALUES (''); DROP TABLE notes_note; --', 'description')
+            <br>
+            <br>
+            Result: Stored as plain text, no table dropped!
+        </div>
+        <div class="form-container">
+            <h3>🔒 Add a Note (Protected - Parameterized Query)</h3>
+            <form action="{% url 'security:sql-safe' %}" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" required>
+                    <small>Try the same injection: Test'); --</small>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description (min 10 chars):</label>
+                    <textarea id="description" name="description" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Submit (Safe)</button>
+            </form>
+        </div>
+        <h2>All Notes (Safely Stored):</h2>
+        <table class="notes-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in notes %}
+                    <tr>
+                        <td>{{ note.title }}</td>
+                        <td>{{ note.description }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2">No notes yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="margin-top: 30px;
+                    padding: 15px;
+                    background-color: #e7f3ff;
+                    border-radius: 5px">
+            <h3>Best Practices for SQL Injection Prevention:</h3>
+            <ol>
+                <li>
+                    <strong>Always use parameterized queries:</strong> Separate SQL code from data
+                </li>
+                <li>
+                    <strong>Use ORM frameworks:</strong> Django ORM, SQLAlchemy etc. handle this automatically
+                </li>
+                <li>
+                    <strong>Input validation:</strong> Validate and sanitize input on the server
+                </li>
+                <li>
+                    <strong>Principle of Least Privilege:</strong> Database user should have minimal permissions
+                </li>
+                <li>
+                    <strong>Error handling:</strong> Don't expose database errors to users
+                </li>
+                <li>
+                    <strong>Testing:</strong> Include SQL injection tests in your security testing
+                </li>
+            </ol>
+        </div>
+        <h3>Django ORM Example (Recommended):</h3>
+        <div class="code-block">
+            # Most Pythonic and safe approach:
+            <br>
+            Note.objects.create(title=title, description=description)
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="{% url 'security:sql-demo' %}"
+               style="display: inline-block;
+                      padding: 10px 20px;
+                      background-color: #dc3545;
+                      color: white;
+                      text-decoration: none;
+                      border-radius: 4px">🚨 View Vulnerable Version</a>
+        </div>
+    </div>
+{% endblock content %}

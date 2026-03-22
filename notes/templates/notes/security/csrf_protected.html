@@ -1,0 +1,258 @@
+{% extends 'notes/base.html' %}
+{% block title %}
+    CSRF - Safe Demo
+{% endblock title %}
+{% block content %}
+    <style>
+    .container {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    
+    .safe-box {
+        background-color: #d4edda;
+        border: 2px solid #28a745;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    
+    .code-block {
+        background-color: #f4f4f4;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-family: monospace;
+        font-size: 13px;
+        margin: 10px 0;
+        border-left: 4px solid #28a745;
+        word-break: break-all;
+    }
+    
+    .form-container {
+        background-color: #fff;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    
+    .form-group input, .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+    }
+    
+    .submit-btn {
+        background-color: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    .submit-btn:hover {
+        background-color: #218838;
+    }
+    
+    .csrf-token-info {
+        background-color: #cfe2ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+        border-left: 4px solid #0d6efd;
+    }
+    
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+    }
+    </style>
+    <div class="container">
+        <a href="{% url 'security:dashboard' %}" class="back-link">← Back to Dashboard</a>
+        <h1>✅ CSRF (Cross-Site Request Forgery) - SAFE Version</h1>
+        <div class="safe-box">
+            <strong>PROTECTION STATUS:</strong> 🟢 PROTECTED
+            <br>
+            <strong>Solution:</strong> This page uses Django's CSRF token validation to ensure requests originate from trusted sources.
+        </div>
+        <h2>How CSRF Protection Works:</h2>
+        <p>A CSRF token is a unique, secret value that:</p>
+        <ul>
+            <li>Is generated per user session</li>
+            <li>Is included in every form as a hidden field</li>
+            <li>Is validated on the server before processing POST requests</li>
+            <li>Cannot be obtained by cross-origin requests</li>
+        </ul>
+        <h3>Protected Code Pattern:</h3>
+        <div class="code-block">
+            &lt;form action="..." method="post"&gt;
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;{% csrf_token %}
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;input type="text" name="title"&gt;
+            <br>
+            &lt;/form&gt;
+        </div>
+        <h3>What Actually Gets Rendered:</h3>
+        <div class="code-block">&lt;input type="hidden" name="csrfmiddlewaretoken" value="9a...kK"&gt;</div>
+        <div class="csrf-token-info">
+            <h4>🔐 CSRF Token Validation Flow:</h4>
+            <ol>
+                <li>
+                    <strong>User visits form:</strong> Server generates unique CSRF token for this session
+                </li>
+                <li>
+                    <strong>Token in form:</strong> Hidden field with the token is included in the HTML
+                </li>
+                <li>
+                    <strong>User submits:</strong> Browser includes the token with the POST data
+                </li>
+                <li>
+                    <strong>Server validates:</strong> Compare received token with stored session token
+                </li>
+                <li>
+                    <strong>If valid:</strong> Process the request normally
+                </li>
+                <li>
+                    <strong>If invalid/missing:</strong> Reject the request with 403 Forbidden error
+                </li>
+            </ol>
+        </div>
+        <div class="form-container">
+            <h3>🔒 Add a Note (Protected - With CSRF Token)</h3>
+            <form action="{% url 'security:csrf-protected' %}" method="post">
+                {% csrf_token %}
+                {# The {% csrf_token %} above renders to: #}
+                {# <input type="hidden" name="csrfmiddlewaretoken" value="unique_token"> #}
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description (min 10 chars):</label>
+                    <textarea id="description" name="description" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Submit (CSRF Protected)</button>
+            </form>
+        </div>
+        <h2>Why CSRF Attacks Fail Here:</h2>
+        <div style="padding: 15px;
+                    background-color: #e7f3ff;
+                    border-radius: 5px;
+                    margin: 20px 0">
+            <h4>Scenario: Attacker tries to forge a request</h4>
+            <p>An attacker creates a hidden form on their malicious website:</p>
+            <div class="code-block">
+                &lt;form action="https://yoursite.com/security/csrf/protected/" method="POST"&gt;
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&lt;input type="hidden" name="title" value="Hacked"&gt;
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&lt;input type="hidden" name="description" value="Exploit"&gt;
+                <br>
+                &lt;/form&gt;
+            </div>
+            <p>
+                <strong>Problem for attacker:</strong>
+            </p>
+            <ul>
+                <li>The form is missing the CSRF token</li>
+                <li>The attacker cannot obtain your unique CSRF token (same-origin policy)</li>
+                <li>Even if they guess a token, it won't match YOUR session token</li>
+                <li>Server rejects the request with 403 Forbidden</li>
+                <li>Attack fails silently from the user's perspective</li>
+            </ul>
+        </div>
+        <h3>Django CSRF Middleware Verification:</h3>
+        <div style="padding: 15px; background-color: #f0f0f0; border-radius: 5px;">
+            <p>
+                <strong>When Django receives a POST request:</strong>
+            </p>
+            <div class="code-block">
+                1. Extract CSRF token from request (POST data or header)
+                <br>
+                2. Verify token exists
+                <br>
+                3. Compare with token in user's session
+                <br>
+                4. If match: ✅ Process request
+                <br>
+                5. If no match: ❌ Return 403 Forbidden
+            </div>
+        </div>
+        <h3>Best Practices for CSRF Prevention:</h3>
+        <ol>
+            <li>
+                <strong>Always include {% csrf_token %}:</strong> In every form that modifies data
+            </li>
+            <li>
+                <strong>Use POST/PUT/DELETE:</strong> Never use GET for state-changing operations
+            </li>
+            <li>
+                <strong>Enable CSRF middleware:</strong> Keep 'django.middleware.csrf.CsrfViewMiddleware' active
+            </li>
+            <li>
+                <strong>Use secure cookies:</strong> Set Secure and HttpOnly flags on cookies
+            </li>
+            <li>
+                <strong>SameSite cookies:</strong> Add SameSite=Strict/Lax attribute
+            </li>
+            <li>
+                <strong>Custom AJAX requests:</strong> Send CSRF token in headers
+            </li>
+        </ol>
+        <h3>AJAX Example with CSRF Token:</h3>
+        <div class="code-block">
+            // Get CSRF token from page
+            <br>
+            const token = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            <br>
+            <br>
+            // Send with fetch
+            <br>
+            fetch('/api/notes/', {
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;method: 'POST',
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;headers: {
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'X-CSRFToken': token
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;},
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;body: JSON.stringify({title: 'Test', description: 'Safe'})
+            <br>
+            })
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="{% url 'security:csrf-vulnerable' %}"
+               style="display: inline-block;
+                      padding: 10px 20px;
+                      background-color: #dc3545;
+                      color: white;
+                      text-decoration: none;
+                      border-radius: 4px">🚨 View Vulnerable Version</a>
+        </div>
+    </div>
+{% endblock content %}

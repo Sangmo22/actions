@@ -1,0 +1,191 @@
+{% extends 'notes/base.html' %}
+{% block title %}
+    XSS - Safe Demo
+{% endblock title %}
+{% block content %}
+    <style>
+    .container {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    
+    .safe-box {
+        background-color: #d4edda;
+        border: 2px solid #28a745;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    
+    .code-block {
+        background-color: #f4f4f4;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-family: monospace;
+        font-size: 13px;
+        margin: 10px 0;
+        border-left: 4px solid #28a745;
+    }
+    
+    .notes-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    
+    .notes-table th, .notes-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .notes-table th {
+        background-color: #f9f9f9;
+        font-weight: bold;
+    }
+    
+    .notes-table tr:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+    }
+    
+    .back-link:hover {
+        background-color: #0056b3;
+    }
+    </style>
+    <div class="container">
+        <a href="{% url 'security:dashboard' %}" class="back-link">← Back to Dashboard</a>
+        <h1>✅ XSS (Cross-Site Scripting) - SAFE Version</h1>
+        <div class="safe-box">
+            <strong>PROTECTION STATUS:</strong> 🟢 PROTECTED
+            <br>
+            <strong>Solution:</strong> This page uses Django's built-in auto-escaping to safely render user input.
+        </div>
+        <h2>How Protection Works:</h2>
+        <p>
+            Django's template system automatically escapes HTML special characters by default. This converts potentially dangerous characters like &lt;, &gt;, &amp;, and &quot; into their HTML entities.
+        </p>
+        <h3>Protected Code Pattern:</h3>
+        <div class="code-block">
+            &lt;!-- SAFE: Using Django's auto-escaping (default) --&gt;
+            <br>
+            &lt;td&gt;{{ note.title }}&lt;/td&gt;
+            <br>
+            &lt;td&gt;{{ note.description }}&lt;/td&gt;
+        </div>
+        <h3>What Gets Escaped? Examples:</h3>
+        <table class="notes-table">
+            <thead>
+                <tr>
+                    <th>Original Input</th>
+                    <th>Escaped Output</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>&lt;</td>
+                    <td>&amp;lt;</td>
+                </tr>
+                <tr>
+                    <td>&gt;</td>
+                    <td>&amp;gt;</td>
+                </tr>
+                <tr>
+                    <td>&amp;</td>
+                    <td>&amp;amp;</td>
+                </tr>
+                <tr>
+                    <td>"</td>
+                    <td>&amp;quot;</td>
+                </tr>
+                <tr>
+                    <td>'</td>
+                    <td>&amp;#x27;</td>
+                </tr>
+            </tbody>
+        </table>
+        <h2>Current Notes (Safely Escaped):</h2>
+        <table class="notes-table">
+            <thead>
+                <tr>
+                    <th>Title (Auto-Escaped)</th>
+                    <th>Description (Auto-Escaped)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in notes %}
+                    <tr>
+                        <!-- SAFE: Default Django auto-escaping is applied -->
+                        <td>{{ note.title }}</td>
+                        <td>{{ note.description }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2">No notes yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="margin-top: 30px;
+                    padding: 15px;
+                    background-color: #e7f3ff;
+                    border-radius: 5px">
+            <h3>Why XSS Attacks Fail Here:</h3>
+            <p>
+                If you submit a payload like <code>&lt;img src=x onerror="alert('XSS')"&gt;</code>:
+            </p>
+            <ol>
+                <li>The malicious code is stored in the database (as-is)</li>
+                <li>When Django renders the template, it automatically escapes the HTML</li>
+                <li>
+                    The string becomes: <code>&amp;lt;img src=x onerror=&amp;quot;alert('XSS')&amp;quot;&amp;gt;</code>
+                </li>
+                <li>The browser displays this as plain text instead of executing it</li>
+                <li>No alert box appears - the attack is prevented</li>
+            </ol>
+        </div>
+        <div style="margin-top: 20px;">
+            <h3>Best Practices for XSS Prevention:</h3>
+            <ul>
+                <li>
+                    <strong>Always use auto-escaping:</strong> Django enables it by default in templates
+                </li>
+                <li>
+                    <strong>Never use |safe filter:</strong> Unless you have validated and sanitized the content
+                </li>
+                <li>
+                    <strong>Use |escape filter explicitly:</strong> For extra confidence in sensitive fields
+                </li>
+                <li>
+                    <strong>Content Security Policy (CSP):</strong> Add CSP headers as a second line of defense
+                </li>
+                <li>
+                    <strong>Input validation:</strong> Validate input type and format server-side
+                </li>
+                <li>
+                    <strong>Output encoding:</strong> Use proper encoding for the context (HTML, JavaScript, URL, CSS)
+                </li>
+            </ul>
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="{% url 'security:xss-vulnerable' %}"
+               style="display: inline-block;
+                      padding: 10px 20px;
+                      background-color: #dc3545;
+                      color: white;
+                      text-decoration: none;
+                      border-radius: 4px">🚨 View Vulnerable Version</a>
+        </div>
+    </div>
+{% endblock content %}

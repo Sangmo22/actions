@@ -1,0 +1,213 @@
+{% extends 'notes/base.html' %}
+{% block title %}
+    SQL Injection - Vulnerable Demo
+{% endblock title %}
+{% block content %}
+    <style>
+    .container {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    
+    .vulnerability-box {
+        background-color: #ffebee;
+        border: 2px solid #dc3545;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    
+    .code-block {
+        background-color: #f4f4f4;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-family: monospace;
+        font-size: 13px;
+        margin: 10px 0;
+        border-left: 4px solid #ff6b6b;
+        word-break: break-all;
+    }
+    
+    .form-container {
+        background-color: #fff;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    
+    .form-group input, .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+    }
+    
+    .submit-btn {
+        background-color: #dc3545;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    .submit-btn:hover {
+        background-color: #c82333;
+    }
+    
+    .test-payload {
+        background-color: #fff3cd;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 15px 0;
+    }
+    
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+    }
+    </style>
+    <div class="container">
+        <a href="{% url 'security:dashboard' %}" class="back-link">← Back to Dashboard</a>
+        <h1>🚨 SQL Injection - VULNERABLE Version</h1>
+        <div class="vulnerability-box">
+            <strong>VULNERABILITY STATUS:</strong> 🔴 VULNERABLE
+            <br>
+            <strong>Issue:</strong> This page constructs SQL queries using string concatenation, allowing SQL code injection.
+        </div>
+        <h2>How This Works:</h2>
+        <p>
+            The vulnerable code directly concatenates user input into SQL queries without parameterization, allowing attackers to inject arbitrary SQL commands.
+        </p>
+        <h3>Vulnerable Code Pattern:</h3>
+        <div class="code-block">
+            sql = f"""
+            <br>
+            INSERT INTO notes_note (title, description)
+            <br>
+            VALUES ('{title}', '{desc}');
+            <br>
+            """
+            <br>
+            cursor.execute(sql)
+        </div>
+        <h3>Why This is Dangerous:</h3>
+        <p>
+            The quotes in the SQL string can be closed by the attacker's input, allowing them to inject additional SQL commands.
+        </p>
+        <h3>Try These SQL Injection Payloads:</h3>
+        <div class="test-payload">
+            <strong>Payload 1 (Data Extraction):</strong>
+            <br>
+            <code>Title: Normal'; " or "1"="1</code>
+            <br>
+            <code>Description: This will extract all data</code>
+            <br>
+            <br>
+            <strong>Payload 2 (Comment-based bypass):</strong>
+            <br>
+            <code>Title: Test'); --</code>
+            <br>
+            <code>Description: Comment syntax injected (min 10 chars)</code>
+            <br>
+            <br>
+            <strong>Payload 3 (Union-based):</strong>
+            <br>
+            <code>Title: Test' UNION SELECT username, password FROM auth_user --</code>
+            <br>
+            <code>Description: This would extract user credentials if successful</code>
+            <br>
+            <br>
+            <strong>Payload 4 (Time-based blind):</strong>
+            <br>
+            <code>Title: Test'; WAITFOR DELAY '00:00:05'; --</code>
+            <br>
+            <code>Description: This would delay the response by 5 seconds</code>
+        </div>
+        <div class="form-container">
+            <h3>🔓 Add a Note (Vulnerable - Raw SQL)</h3>
+            <form action="{% url 'security:sql-demo' %}" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" required>
+                    <small>Try injecting SQL: Test'); --</small>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description (min 10 chars):</label>
+                    <textarea id="description" name="description" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Submit & Inject SQL</button>
+            </form>
+        </div>
+        <div style="margin-top: 30px;
+                    padding: 15px;
+                    background-color: #e7f3ff;
+                    border-radius: 5px">
+            <h3>What Happens with SQL Injection:</h3>
+            <p>
+                If you submit Title: <code>Test'); DROP TABLE notes_note; --</code>
+            </p>
+            <p>The SQL becomes:</p>
+            <div class="code-block">
+                INSERT INTO notes_note (title, description)
+                <br>
+                VALUES ('Test'); DROP TABLE notes_note; --', '...')
+            </div>
+            <p>This executes TWO commands:</p>
+            <ol>
+                <li>INSERT with title 'Test'</li>
+                <li>DROP TABLE notes_note (deletes all data!)</li>
+                <li>The rest is commented out with --</li>
+            </ol>
+        </div>
+        <h2>Common SQL Injection Impacts:</h2>
+        <ul>
+            <li>
+                <strong>Data Breach:</strong> Extracting sensitive information
+            </li>
+            <li>
+                <strong>Data Modification:</strong> Changing or deleting records
+            </li>
+            <li>
+                <strong>Authentication Bypass:</strong> Bypassing login checks
+            </li>
+            <li>
+                <strong>Privilege Escalation:</strong> Gaining admin access
+            </li>
+            <li>
+                <strong>Code Execution:</strong> Running OS commands (depending on DB permissions)
+            </li>
+        </ul>
+        <div style="margin-top: 20px;">
+            <a href="{% url 'security:sql-safe' %}"
+               style="display: inline-block;
+                      padding: 10px 20px;
+                      background-color: #28a745;
+                      color: white;
+                      text-decoration: none;
+                      border-radius: 4px">✅ View Protected Version</a>
+        </div>
+    </div>
+{% endblock content %}

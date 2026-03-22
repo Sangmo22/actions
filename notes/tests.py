@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.urls import reverse
+from .models import Note
 from .utils import add
 
 
@@ -10,36 +11,42 @@ class AddFunctionTestCase(TestCase):
 
 class HomePageTestCase(TestCase):
     def test_home_page_contains_homepage_text(self):
-        response = self.client.get(reverse('notes:index'))
+        response = self.client.get(reverse('notes:index'), follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Homepage')
 
 
 class NotesTestCase(TestCase):
     def test_notes_can_be_created(self):
-        # Act
-        response = self.client.post(reverse('notes:add'), {
-            'title': 'Django Course1',
-            'description': 'Complete course with urls, templates, models, etc'
-        })
+        response = self.client.post(
+            reverse('notes:add'),
+            {
+                'title': 'Django Course',
+                'description': 'Complete course with urls, templates, models, etc',
+            },
+            follow=True,
+            secure=True,
+        )
 
-        # Assert
-        # Redirect after successful creation
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(len(response.redirect_chain), 1)
+        self.assertEqual(Note.objects.count(), 1)
+        self.assertTrue(Note.objects.filter(title='Django Course').exists())
 
-        # Follow redirect and check the note appears
-        response = self.client.get(response.url)
-        self.assertContains(response, 'Django Course')
+        index_response = self.client.get(reverse('notes:index'), follow=True, secure=True)
+        self.assertContains(index_response, 'Django Course')
 
     def test_error_occurs_if_description_is_less_than_10_chars_long(self):
-        # Act
-        response = self.client.post(reverse('notes:add'), {
-            'title': 'Django Course',
-            'description': 'dj'
-        })
+        response = self.client.post(
+            reverse('notes:add'),
+            {
+                'title': 'Django Course',
+                'description': 'dj',
+            },
+            follow=True,
+            secure=True,
+        )
 
-        # Assert
-        # Should return to form with errors
         self.assertEqual(response.status_code, 200)
-        self.assertContains(
-            response, 'Description must be at least 10 characters long')
+        self.assertContains(response, 'Description must be at least 10 characters long')
+        self.assertEqual(Note.objects.count(), 0)

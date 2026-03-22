@@ -1,0 +1,237 @@
+{% extends 'notes/base.html' %}
+{% block title %}
+    CSRF - Vulnerable Demo
+{% endblock title %}
+{% block content %}
+    <style>
+    .container {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    
+    .vulnerability-box {
+        background-color: #ffebee;
+        border: 2px solid #dc3545;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    
+    .code-block {
+        background-color: #f4f4f4;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-family: monospace;
+        font-size: 13px;
+        margin: 10px 0;
+        border-left: 4px solid #ff6b6b;
+        word-break: break-all;
+    }
+    
+    .form-container {
+        background-color: #fff;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    
+    .form-group input, .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+    }
+    
+    .submit-btn {
+        background-color: #dc3545;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    .submit-btn:hover {
+        background-color: #c82333;
+    }
+    
+    .test-payload {
+        background-color: #fff3cd;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 15px 0;
+    }
+    
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+    }
+    
+    .csrf-attack-demo {
+        background-color: #ffe6e6;
+        padding: 15px;
+        border: 1px solid #dc3545;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+    
+    .csrf-attack-demo h4 {
+        margin: 0 0 10px 0;
+        color: #dc3545;
+    }
+    </style>
+    <div class="container">
+        <a href="{% url 'security:dashboard' %}" class="back-link">← Back to Dashboard</a>
+        <h1>🚨 CSRF (Cross-Site Request Forgery) - VULNERABLE Version</h1>
+        <div class="vulnerability-box">
+            <strong>VULNERABILITY STATUS:</strong> 🔴 VULNERABLE
+            <br>
+            <strong>Issue:</strong> This endpoint does NOT require CSRF token validation. An attacker can forge requests from another site.
+        </div>
+        <h2>What is CSRF?</h2>
+        <p>
+            CSRF is an attack where a malicious website tricks you into performing unwanted actions on another site where you're logged in. The attacker exploits the fact that your browser automatically sends cookies with requests.
+        </p>
+        <h2>Vulnerable Code Pattern:</h2>
+        <div class="code-block">
+            # VULNERABLE: No {% csrf_token %} check
+            <br>
+            def csrf_vulnerable_add(request):
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;if request.method == 'POST':
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# No CSRF validation
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Note.objects.create(title=title, description=description)
+        </div>
+        <h3>How CSRF Attack Works:</h3>
+        <div class="test-payload">
+            <strong>Step 1:</strong> You visit this website and stay logged in
+            <br>
+            <br>
+            <strong>Step 2:</strong> You click a malicious link that goes to a different website
+            <br>
+            <br>
+            <strong>Step 3:</strong> That website has hidden code that submits a form to THIS website
+            <br>
+            <br>
+            <strong>Step 4:</strong> Your browser automatically includes your session cookie
+            <br>
+            <br>
+            <strong>Step 5:</strong> The note gets created without your knowledge!
+        </div>
+        <h3>Malicious HTML (What hackers would create):</h3>
+        <div class="code-block">
+            &lt;!-- Hosted on attacker.com --&gt;
+            <br>
+            &lt;form action="http://yoursite.com/security/csrf/vulnerable/" method="POST"&gt;
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;input type="hidden" name="title" value="Hacked Note"&gt;
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;input type="hidden" name="description" value="Your account was compromised"&gt;
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;input type="submit" value="Click to claim prize!"&gt;
+            <br>
+            &lt;/form&gt;
+        </div>
+        <div class="form-container">
+            <h3>🔓 Add a Note (Vulnerable - No CSRF Token)</h3>
+            <form action="{% url 'security:csrf-vulnerable' %}" method="post">
+                {# VULNERABLE: No {% csrf_token %} included #}
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" value="" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description (min 10 chars):</label>
+                    <textarea id="description" name="description" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Submit (No CSRF Protection)</button>
+            </form>
+        </div>
+        <div class="csrf-attack-demo">
+            <h4>🎯 Simulated CSRF Attack</h4>
+            <p>Below is what a malicious website would send to attack this endpoint:</p>
+            <form action="{% url 'security:csrf-vulnerable' %}"
+                  method="post"
+                  style="display: none"
+                  id="csrf-attack">
+                <input type="hidden"
+                       name="title"
+                       value="CSRF ATTACK - Your notes were hacked!">
+                <input type="hidden"
+                       name="description"
+                       value="This note was created by a malicious CSRF attack. Your session was compromised because the endpoint did not validate CSRF tokens.">
+            </form>
+            <p>
+                <strong>Note:</strong> While this form exists on the same page, a real CSRF attack would come from a completely different website (attacker.com). The attack would still work because:
+            </p>
+            <ul>
+                <li>Your browser has your session cookie</li>
+                <li>The endpoint doesn't validate CSRF tokens</li>
+                <li>POST requests are sent with cookies automatically</li>
+            </ul>
+            <p style="color: #dc3545; font-weight: bold;">This is why CSRF tokens are critical!</p>
+        </div>
+        <div style="margin-top: 30px;
+                    padding: 15px;
+                    background-color: #e7f3ff;
+                    border-radius: 5px">
+            <h3>Why CSRF is Dangerous:</h3>
+            <ul>
+                <li>
+                    <strong>Unauthorized Actions:</strong> Attackers can modify or delete your data
+                </li>
+                <li>
+                    <strong>Financial Fraud:</strong> Transfer money, make purchases
+                </li>
+                <li>
+                    <strong>Account Takeover:</strong> Change password, email, settings
+                </li>
+                <li>
+                    <strong>Reputation Damage:</strong> Post harmful content on your account
+                </li>
+                <li>
+                    <strong>Silent Attacks:</strong> User never knows what happened
+                </li>
+            </ul>
+        </div>
+        <h3>Requirements for CSRF to Work:</h3>
+        <ol>
+            <li>User must be logged into the target site</li>
+            <li>User must visit a malicious website</li>
+            <li>The target site must not validate CSRF tokens</li>
+            <li>The action must work with a simple POST request</li>
+        </ol>
+        <div style="margin-top: 20px;">
+            <a href="{% url 'security:csrf-protected' %}"
+               style="display: inline-block;
+                      padding: 10px 20px;
+                      background-color: #28a745;
+                      color: white;
+                      text-decoration: none;
+                      border-radius: 4px">✅ View Protected Version</a>
+        </div>
+    </div>
+{% endblock content %}
